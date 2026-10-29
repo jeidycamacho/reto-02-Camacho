@@ -317,7 +317,7 @@ export class GeminiAdaptador implements AdaptadorLLM {
     this.apiKey = process.env['GEMINI_API_KEY'] ?? '';
 
     this.ai = new GoogleGenAI({
-      apiKey: this.apiKey,
+      apiKey: this.apiKey || 'SIN_CLAVE',
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -327,6 +327,9 @@ export class GeminiAdaptador implements AdaptadorLLM {
   }
 
   public async generarMinimo(prompt = 'responde OK', signal?: AbortSignal): Promise<{ texto: string; ms: number }> {
+    if (!this.apiKey || this.apiKey.trim().length === 0) {
+      throw new Error('Clave de API no configurada en el entorno (GEMINI_API_KEY vacía o ausente)');
+    }
     const inicio = Date.now();
     const res = await this.ai.models.generateContent({
       model: this.modelo,
@@ -351,6 +354,9 @@ export class GeminiAdaptador implements AdaptadorLLM {
     herramientas?: readonly EsquemaHerramienta[],
     opciones?: OpcionesEnvio
   ): Promise<RespuestaLLM> {
+    if (!this.apiKey || this.apiKey.trim().length === 0) {
+      throw new Error('Clave de API no configurada en el entorno (GEMINI_API_KEY vacía o ausente)');
+    }
     const timeoutMs = opciones?.timeoutMs ?? Number(process.env['LLM_TIMEOUT_MS'] ?? 120000);
 
     // Preparar contenidos para el SDK

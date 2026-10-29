@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer } from 'vite';
 import { GeminiAdaptador, ejecutarDiagnostico } from './llm/gemini.ts';
 import { CicloAgente } from './agent/ciclo.ts';
@@ -13,9 +13,7 @@ import {
 import { leerMaestro, asegurarMaestro } from './tools/lib/almacen.ts';
 import { generarReporteAlertas } from './tools/lib/alertas.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
+const rootDir = process.cwd();
 
 const app = express();
 const PORT = Number(process.env['PORT'] ?? 3000);
@@ -43,8 +41,20 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
   next();
 });
 
-// Endpoint de salud: responde sin exponer claves
+// Endpoint de salud: responde sin exponer claves y reporta si falta GEMINI_API_KEY
 app.get('/api/health', (_req: Request, res: Response) => {
+  const tieneApiKey = Boolean(
+    process.env['GEMINI_API_KEY'] && process.env['GEMINI_API_KEY'].trim().length > 0
+  );
+  if (!tieneApiKey) {
+    res.json({
+      ok: false,
+      provider: llmAdapter.proveedor,
+      model: llmAdapter.modelo,
+      error: 'GEMINI_API_KEY no configurada en el entorno',
+    });
+    return;
+  }
   res.json({
     ok: true,
     provider: llmAdapter.proveedor,
@@ -214,26 +224,39 @@ app.post('/api/reset', (_req: Request, res: Response): void => {
 });
 
 async function startServer(): Promise<void> {
-  const isProduction = process.env['NODE_ENV'] === 'production';
+  try {
+    const isProduction =
+      process.env['NODE_ENV'] === 'production' ||
+      fs.existsSync(path.join(rootDir, 'dist', 'index.html'));
 
-  if (!isProduction) {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-      root: rootDir,
+    if (!isProduction) {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+        root: rootDir,
+      });
+      app.use(vite.middlewares);
+    } else {
+      const distPath = path.join(rootDir, 'dist');
+      app.use(express.static(distPath));
+      app.get('*', (_req: Request, res: Response) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+
+    const server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Server] Registro de Contratos Vigentes corriendo en http://0.0.0.0:${PORT}`);
     });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(rootDir, 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+
+    server.on('error', (err) => {
+      console.error(`[Server Fatal Error]: Error en el servidor HTTP (ej. puerto ${PORT} en uso): ${err.stack ?? err.message}`);
+      process.exit(1);
     });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.stack ?? err.message : String(err);
+    console.error(`[Fatal Startup Error]: No se pudo iniciar el servidor. Detalle completo: ${errorMsg}`);
+    process.exit(1);
   }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] Registro de Contratos Vigentes corriendo en http://localhost:${PORT}`);
-  });
 }
 
 void startServer();
