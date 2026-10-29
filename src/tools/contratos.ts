@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ContratoSchema } from './lib/esquema.ts';
+import { procesarExtraccion } from './lib/extraccion.ts';
 
 export interface ToolContext {
   directory: string;
@@ -36,8 +37,25 @@ export const extraer: ToolContract<{
   args: {
     mensaje_id: mensajeIdSchema,
   },
-  execute: async (_args, _ctx): Promise<string> => {
-    return DEFAULT_STUB_RESPONSE;
+  execute: async (args, ctx): Promise<string> => {
+    try {
+      const resultado = procesarExtraccion(args.mensaje_id, ctx.directory);
+      return JSON.stringify({
+        ok: true,
+        data: {
+          mensaje_id: resultado.mensaje_id,
+          adjunto: resultado.adjunto,
+          contrato: resultado.contrato,
+          advertencias: resultado.advertencias,
+        },
+      });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : String(error);
+      return JSON.stringify({
+        ok: false,
+        error: mensaje,
+      });
+    }
   },
 };
 
