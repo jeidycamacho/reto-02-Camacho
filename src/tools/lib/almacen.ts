@@ -249,13 +249,10 @@ export function archivarDocumentoContrato(
     fs.mkdirSync(carpetaDestino, { recursive: true });
   }
 
-  const extOriginal = path.extname(nombreAdjunto) || '.pdf';
-  // En SharePoint se archivan como PDF o extensión correspondiente
-  const extDestino = extOriginal.toLowerCase() === '.txt' ? '.pdf' : extOriginal;
-
-  let nombreArchivoFinal = `${idContrato}${extDestino}`;
+  const extOriginal = path.extname(nombreAdjunto) || '.txt';
+  let nombreArchivoFinal = `${idContrato}${extOriginal.toLowerCase() === '.txt' ? '.pdf' : extOriginal}`;
   if (esOtrosi) {
-    nombreArchivoFinal = `${idContrato}_otrosi_${mensajeId}${extDestino}`;
+    nombreArchivoFinal = `${idContrato}_otrosi_${mensajeId}${extOriginal}`;
   }
 
   const rutaDestinoAbs = path.join(carpetaDestino, nombreArchivoFinal);
