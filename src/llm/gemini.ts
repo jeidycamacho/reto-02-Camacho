@@ -231,7 +231,7 @@ const historialLlamadasTimestamp: number[] = [];
 
 /**
  * Extrae el tiempo sugerido de espera (en segundos) de un error 429 de Gemini.
- * Busca patrones tipo "retry in 12s", "retry after 15.5s" o campos retryDelay.
+ * Interpreta correctamente "40.065s" como 40.065 segundos (40,065 ms) sin alterar el punto decimal.
  */
 function extraerTiempoEspera429(error: unknown): number {
   let text = '';
@@ -242,23 +242,26 @@ function extraerTiempoEspera429(error: unknown): number {
     text = String(error);
   }
 
-  const matchRetryIn = text.match(/retry\s+(?:in|after)\s+(\d+(?:\.\d+)?)\s*s/i);
-  if (matchRetryIn && matchRetryIn[1]) {
-    const seg = parseFloat(matchRetryIn[1]);
-    if (!isNaN(seg) && seg > 0) return seg;
-  }
-
+  // 1. Buscar "retryDelay": "40.065s" o "retryDelay": "15s"
   const matchRetryDelayStr = text.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/i);
   if (matchRetryDelayStr && matchRetryDelayStr[1]) {
     const seg = parseFloat(matchRetryDelayStr[1]);
     if (!isNaN(seg) && seg > 0) return seg;
   }
 
-  const matchRetryDelayNum = text.match(/"retryDelay"\s*:\s*(\d+)/i);
+  // 2. Buscar "retry in 40.065s" o "retry after 15.5s"
+  const matchRetryIn = text.match(/retry\s+(?:in|after)\s+(\d+(?:\.\d+)?)\s*s/i);
+  if (matchRetryIn && matchRetryIn[1]) {
+    const seg = parseFloat(matchRetryIn[1]);
+    if (!isNaN(seg) && seg > 0) return seg;
+  }
+
+  // 3. Buscar "retryDelay": 40.065 o 40065
+  const matchRetryDelayNum = text.match(/"retryDelay"\s*:\s*(\d+(?:\.\d+)?)/i);
   if (matchRetryDelayNum && matchRetryDelayNum[1]) {
     const val = parseFloat(matchRetryDelayNum[1]);
     if (!isNaN(val) && val > 0) {
-      return val > 100 ? val / 1000 : val;
+      return val >= 1000 ? val / 1000 : val;
     }
   }
 
@@ -287,6 +290,10 @@ async function aplicarLimiteVelocidad(onNotificacion?: (detalle: string) => void
     const masAntigua = historialLlamadasTimestamp[0]!;
     const esperaMs = Math.max(1000, 60000 - (ahora - masAntigua) + 500);
     const esperaSegundos = Math.ceil(esperaMs / 1000);
+
+    if (esperaSegundos > 60) {
+      throw new Error('Cuota del modelo agotada (LIMITE DE CONSUMO DEL ÁREA). Intenta más tarde.');
+    }
 
     const detalleMsg = `esperando cupo del modelo (${esperaSegundos}s)`;
     console.log(`[Gemini Rate Limiter] Límite RPM alcanzado (${historialLlamadasTimestamp.length}/${maxRpm}). ${detalleMsg}`);
@@ -555,15 +562,24 @@ export class GeminiAdaptador implements AdaptadorLLM {
           info.mensajeOriginal.includes('quota');
 
         if (es429) {
+          const segSugeridos = extraerTiempoEspera429(primerError);
+
+          // Tope de espera: si el tiempo sugerido supera 60 segundos, NO esperar
+          if (segSugeridos > 60) {
+            console.warn(
+              `[Gemini 429] Tiempo sugerido (${segSugeridos.toFixed(2)}s) supera el tope de 60s. Respondiendo de inmediato con error de cuota.`
+            );
+            throw new Error('Cuota del modelo agotada (LIMITE DE CONSUMO DEL ÁREA). Intenta más tarde.');
+          }
+
           intentos429++;
           if (intentos429 <= 3) {
-            const segSugeridos = extraerTiempoEspera429(primerError);
-            const esperaTotalSeg = Math.ceil(segSugeridos) + 1; // tiempo sugerido más 1 segundo
-            const esperaMs = esperaTotalSeg * 1000;
+            const segRedondeados = Math.ceil(segSugeridos);
+            const esperaMs = Math.ceil(segSugeridos * 1000);
 
-            const detalleMsg = `esperando cupo del modelo (${esperaTotalSeg}s)`;
+            const detalleMsg = `esperando cupo del modelo (${segRedondeados}s)`;
             console.warn(
-              `[Gemini 429 Retry ${intentos429}/3] Cuota excedida. ${detalleMsg}. Reintentando en ${esperaTotalSeg}s...`
+              `[Gemini 429 Retry ${intentos429}/3] Cuota excedida. ${detalleMsg}. Reintentando en ${segRedondeados}s...`
             );
 
             if (opciones?.onNotificacion) {
@@ -573,6 +589,8 @@ export class GeminiAdaptador implements AdaptadorLLM {
             await new Promise((resolve) => setTimeout(resolve, esperaMs));
             continue;
           }
+
+          throw new Error('Cuota del modelo agotada (LIMITE DE CONSUMO DEL ÁREA). Intenta más tarde.');
         }
 
         const es503 =
@@ -622,7 +640,7 @@ export class GeminiAdaptador implements AdaptadorLLM {
           mensajeOriginal.includes('Quota exceeded') ||
           mensajeOriginal.includes('429')
         ) {
-          throw new Error(`Se ha excedido la cuota de peticiones al modelo de lenguaje (429) (detalle: ${detalleParaChat})`);
+          throw new Error('Cuota del modelo agotada (LIMITE DE CONSUMO DEL ÁREA). Intenta más tarde.');
         }
 
         if (
