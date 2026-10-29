@@ -12,6 +12,7 @@ export interface MensajeChatVisible {
     argumentos: Record<string, unknown>;
     ok: boolean;
     resumen: string;
+    resultado?: unknown;
   }>;
 }
 

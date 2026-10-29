@@ -16,6 +16,7 @@ export interface LlamadaToolVisible {
   argumentos: Record<string, unknown>;
   ok: boolean;
   resumen: string;
+  resultado?: unknown;
 }
 
 export interface ResultadoTurno {
@@ -26,6 +27,7 @@ export interface ResultadoTurno {
 
 export type ListenerEventoCiclo = (evento: {
   tipo: 'pensando' | 'herramienta' | 'respuesta';
+  paso?: number;
   llamada?: LlamadaToolVisible;
   texto?: string;
   needsConfirmation?: boolean;
@@ -111,7 +113,7 @@ export class CicloAgente {
         iteracion++;
 
         if (onEvento) {
-          onEvento({ tipo: 'pensando' });
+          onEvento({ tipo: 'pensando', paso: iteracion });
         }
 
         // Consultar adaptador LLM
@@ -227,11 +229,19 @@ export class CicloAgente {
             resumenLlamada = salidaJson.slice(0, 80);
           }
 
+          let parsedResultado: unknown = salidaJson;
+          try {
+            parsedResultado = JSON.parse(salidaJson);
+          } catch {
+            parsedResultado = salidaJson;
+          }
+
           const llamadaVisible: LlamadaToolVisible = {
             nombre: llamada.nombre,
             argumentos: args,
             ok: okLlamada,
             resumen: resumenLlamada,
+            resultado: parsedResultado,
           };
           toolCallsTurno.push(llamadaVisible);
 
