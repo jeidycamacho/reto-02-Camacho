@@ -1,0 +1,6 @@
+{
+  "name": "Registro de Contratos Vigentes",
+  "description": "Sistema full-stack para el registro, extracción, validación y control de contratos vigentes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
