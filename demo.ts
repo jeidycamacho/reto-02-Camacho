@@ -7,6 +7,7 @@ import {
   alertas,
   type ToolContext,
 } from './src/tools/contratos.ts';
+import type { Contrato } from './src/tools/lib/esquema.ts';
 import { createLlmAdapter } from './src/llm/adapter.ts';
 import { createAgent } from './src/agent/index.ts';
 
@@ -18,14 +19,34 @@ async function runDemo(): Promise<void> {
     sessionId: 'demo-session-001',
   };
 
+  const muestraContrato: Contrato = {
+    id_contrato: 'CT-2026-015',
+    cliente: 'Industrias Delta S.A.S.',
+    nit_cliente: '890900111',
+    pais: 'CO',
+    objeto: 'Implementación CRM',
+    valor: 265000000,
+    moneda: 'COP',
+    fecha_inicio: '2026-08-01',
+    fecha_fin: '2027-07-31',
+    requiere_poliza: true,
+    tipo_poliza: 'cumplimiento',
+    estado_poliza: 'pendiente',
+    comercial: 'Laura Gómez Restrepo',
+    ruta_sharepoint: 'Contratos/2026/industrias-delta/CT-2026-015.pdf',
+    fecha_registro: '2026-09-03',
+    fuente: 'buzon',
+    confianza: { id_contrato: 0.95, valor: 0.95, fecha_inicio: 0.9, fecha_fin: 0.9 },
+  };
+
   console.log('1. Verificando herramientas de contratos:');
   const toolList = [
     { name: 'leer_buzon', tool: leer_buzon, sampleArgs: {} },
-    { name: 'extraer', tool: extraer, sampleArgs: { mensaje_id: 'msg_001.pdf' } },
-    { name: 'validar', tool: validar, sampleArgs: { mensaje_id: 'msg_001', contrato: { titulo: 'Contrato Servicios' } } },
-    { name: 'registrar', tool: registrar, sampleArgs: { mensaje_id: 'msg_001', contrato: { titulo: 'Contrato Servicios' }, confirmado: true } },
-    { name: 'descartar', tool: descartar, sampleArgs: { mensaje_id: 'msg_001', motivo: 'Firma incompleta' } },
-    { name: 'alertas', tool: alertas, sampleArgs: { hoy: '2026-10-29' } },
+    { name: 'extraer', tool: extraer, sampleArgs: { mensaje_id: 'msg-001' } },
+    { name: 'validar', tool: validar, sampleArgs: { mensaje_id: 'msg-001', contrato: muestraContrato } },
+    { name: 'registrar', tool: registrar, sampleArgs: { mensaje_id: 'msg-001', contrato: muestraContrato, confirmado: true } },
+    { name: 'descartar', tool: descartar, sampleArgs: { mensaje_id: 'msg-005', motivo: 'Es una cotización, no hay contrato' } },
+    { name: 'alertas', tool: alertas, sampleArgs: { hoy: '2026-09-03' } },
   ] as const;
 
   for (const item of toolList) {

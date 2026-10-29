@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ContratoSchema } from './lib/esquema.ts';
 
 export interface ToolContext {
   directory: string;
@@ -17,10 +18,6 @@ const mensajeIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9._-]+$/, 'El mensaje_id debe cumplir con el patrón ^[A-Za-z0-9._-]+$')
   .describe('Id del mensaje del buzón, por ejemplo msg-001');
-
-const contratoSchema = z
-  .record(z.string(), z.unknown())
-  .describe('Contrato tal como lo devolvió contratos_extraer o contratos_validar');
 
 export const leer_buzon: ToolContract<Record<string, never>> = {
   description:
@@ -46,13 +43,13 @@ export const extraer: ToolContract<{
 
 export const validar: ToolContract<{
   mensaje_id: typeof mensajeIdSchema;
-  contrato: typeof contratoSchema;
+  contrato: typeof ContratoSchema;
 }> = {
   description:
     'Clasifica un contrato extraído como nuevo, actualizacion, duplicado o rechazado contra el maestro y lista los campos que requieren revisión humana.',
   args: {
     mensaje_id: mensajeIdSchema,
-    contrato: contratoSchema,
+    contrato: ContratoSchema,
   },
   execute: async (_args, _ctx): Promise<string> => {
     return DEFAULT_STUB_RESPONSE;
@@ -61,14 +58,14 @@ export const validar: ToolContract<{
 
 export const registrar: ToolContract<{
   mensaje_id: typeof mensajeIdSchema;
-  contrato: typeof contratoSchema;
+  contrato: typeof ContratoSchema;
   confirmado: z.ZodOptional<z.ZodBoolean>;
 }> = {
   description:
     'Escribe o actualiza el contrato en el maestro, lo archiva y deja historial; rechaza si hay campos en revisión sin confirmado=true.',
   args: {
     mensaje_id: mensajeIdSchema,
-    contrato: contratoSchema,
+    contrato: ContratoSchema,
     confirmado: z
       .boolean()
       .optional()

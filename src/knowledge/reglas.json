@@ -1,1 +1,215 @@
-{}
+{
+  "umbral_confianza": 0.8,
+  "umbral_similitud_objeto": 0.9,
+  "dias_alerta_vencimiento": 60,
+  "fecha_corte_maestro": "2026-05-30",
+  "niveles_confianza": {
+    "etiquetado": 0.95,
+    "patron": 0.9,
+    "inferido": 0.85,
+    "derivado": 0.7,
+    "ambiguo": 0.6,
+    "ausente": 0.0
+  },
+  "fuente_extraccion": {
+    "regla_fuente": "Los valores maestros se extraen estrictamente del texto del CONTRATO adjunto. El cuerpo y asunto del correo solo sirven como pista contextual. Si un dato solo aparece en el correo y no en el contrato, su nivel de confianza máximo es 'inferido' (0.85) o menor.",
+    "confianza_maxima_solo_correo": 0.85
+  },
+  "paises": {
+    "CO": {
+      "nombre": "Colombia",
+      "tipo_identificador": "NIT",
+      "longitud_identificador": 9,
+      "requiere_digito_verificacion": true,
+      "formato_maestro": "Dígitos continuos sin puntos ni guión de verificación (ej. 890900111)",
+      "ciudades_clave": ["Bogotá", "Bogotá D.C.", "Medellín", "Barranquilla", "Cali"]
+    },
+    "EC": {
+      "nombre": "Ecuador",
+      "tipo_identificador": "RUC",
+      "longitud_identificador": 13,
+      "requiere_digito_verificacion": false,
+      "formato_maestro": "13 dígitos continuos (ej. 1790012345001)",
+      "ciudades_clave": ["Quito", "Guayaquil", "Cuenca"]
+    },
+    "PE": {
+      "nombre": "Perú",
+      "tipo_identificador": "RUC",
+      "longitud_identificador": 11,
+      "requiere_digito_verificacion": false,
+      "formato_maestro": "11 dígitos continuos (ej. 20512345678)",
+      "ciudades_clave": ["Lima", "Arequipa", "Cusco"]
+    },
+    "PA": {
+      "nombre": "Panamá",
+      "tipo_identificador": "RUC",
+      "longitud_fija": null,
+      "permite_guiones": true,
+      "descripcion_formato": "Alfanumérico o numérico con guiones opcionales (tomo-rollo-asiento o folio/imagen y DV, sin límite rígido de 9 dígitos)",
+      "formato_maestro": "En maestro puede registrarse limpio sin guiones o alfanumérico según documento (ej. 155612345 en fixtures)",
+      "ciudades_clave": ["Ciudad de Panamá", "Panamá"]
+    },
+    "HN": {
+      "nombre": "Honduras",
+      "tipo_identificador": "RTN",
+      "longitud_identificador": 14,
+      "requiere_digito_verificacion": false,
+      "formato_maestro": "14 dígitos continuos (ej. 08019995123456)",
+      "ciudades_clave": ["Tegucigalpa", "San Pedro Sula"]
+    }
+  },
+  "monedas": {
+    "COP": {
+      "simbolos": ["$", "COP", "COP $"],
+      "palabras": ["PESOS", "PESOS M/CTE", "PESOS COLOMBIANOS", "COP"]
+    },
+    "USD": {
+      "simbolos": ["$", "US$", "USD", "USD $"],
+      "palabras": ["DÓLARES", "DOLARES", "DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA", "DOLARES DE LOS ESTADOS UNIDOS DE AMERICA", "USD"]
+    },
+    "PEN": {
+      "simbolos": ["S/", "S/.", "PEN"],
+      "palabras": ["SOLES", "NUEVOS SOLES", "PEN"]
+    },
+    "PAB": {
+      "simbolos": ["B/.", "PAB"],
+      "palabras": ["BALBOAS", "PAB"]
+    },
+    "HNL": {
+      "simbolos": ["L.", "HNL"],
+      "palabras": ["LEMPIRAS", "HNL"]
+    }
+  },
+  "vocabularios": {
+    "contrato": {
+      "marcas_documento": {
+        "contrato": [
+          "CONTRATO DE PRESTACIÓN DE SERVICIOS",
+          "CONTRATO DE PRESTACION DE SERVICIOS",
+          "CONTRATO MARCO",
+          "CONTRATO",
+          "CONVENIO",
+          "ACUERDO DE SERVICIOS"
+        ],
+        "otrosi": [
+          "OTROSÍ",
+          "OTROSI",
+          "MODIFICATORIO",
+          "ENMIENDA",
+          "ADDENDUM",
+          "ADENDA"
+        ]
+      },
+      "marcas_no_contrato": [
+        "COTIZACIÓN",
+        "COTIZACION",
+        "PROPUESTA",
+        "OFERTA",
+        "COT-",
+        "VALIDEZ DE LA OFERTA"
+      ],
+      "palabras_valor_indeterminado": [
+        "no tiene un valor determinado",
+        "valor no determinado",
+        "valor indeterminado",
+        "por demanda",
+        "orden de servicio",
+        "órdenes de servicio",
+        "tarifas del anexo",
+        "según tarifas"
+      ],
+      "frases_no_requiere_poliza": [
+        "no requiere póliza",
+        "no requiere poliza",
+        "no se exigirán garantías",
+        "no se exigiran garantias",
+        "sin póliza",
+        "sin poliza",
+        "no aplica póliza",
+        "no aplica poliza"
+      ],
+      "tipos_poliza": {
+        "cumplimiento": {
+          "clave_maestro": "cumplimiento",
+          "palabras_clave": [
+            "cumplimiento",
+            "póliza de cumplimiento",
+            "poliza de cumplimiento",
+            "garantía de cumplimiento",
+            "garantia de cumplimiento"
+          ]
+        },
+        "calidad": {
+          "clave_maestro": "calidad",
+          "palabras_clave": [
+            "calidad",
+            "buena calidad",
+            "calidad del servicio"
+          ]
+        },
+        "salarios_prestaciones": {
+          "clave_maestro": "salarios_prestaciones",
+          "palabras_clave": [
+            "salarios y prestaciones",
+            "pago de salarios",
+            "prestaciones sociales",
+            "salarios_prestaciones"
+          ]
+        },
+        "responsabilidad_civil": {
+          "clave_maestro": "responsabilidad_civil",
+          "palabras_clave": [
+            "responsabilidad civil",
+            "rc extracontractual",
+            "daños a terceros"
+          ]
+        },
+        "estabilidad_obra": {
+          "clave_maestro": "estabilidad_obra",
+          "palabras_clave": [
+            "estabilidad de la obra",
+            "estabilidad"
+          ]
+        }
+      }
+    },
+    "correo": {
+      "pistas_poliza": [
+        "requiere póliza de cumplimiento",
+        "requiere poliza de cumplimiento",
+        "gestionar con el corredor",
+        "favor gestionar con el corredor",
+        "requiere póliza",
+        "requiere poliza"
+      ],
+      "pistas_no_poliza": [
+        "este no pide póliza",
+        "este no pide poliza",
+        "no pide póliza",
+        "no pide poliza",
+        "no requiere póliza",
+        "no requiere poliza",
+        "sin póliza",
+        "sin poliza"
+      ],
+      "pistas_otrosi": [
+        "otrosí firmado",
+        "otrosi firmado",
+        "otrosí no.",
+        "otrosi no.",
+        "amplía plazo y valor",
+        "amplia plazo y valor",
+        "favor actualizar el registro"
+      ],
+      "pistas_no_contrato": [
+        "les comparto la cotización",
+        "les comparto la cotizacion",
+        "aún no hay contrato",
+        "aun no hay contrato",
+        "es para que la tengan en el radar",
+        "cotización propuesta",
+        "cotizacion propuesta"
+      ]
+    }
+  }
+}
