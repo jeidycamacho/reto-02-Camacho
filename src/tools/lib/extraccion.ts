@@ -239,6 +239,39 @@ export function extraerIdContrato(texto: string, esOtrosi: boolean, reglas: Regl
   };
 }
 
+export function normalizarNombreCliente(nombre: string): string {
+  let limpio = nombre.trim().replace(/\s+/g, ' ').replace(/[,;]+$/, '').trim();
+
+  const sufijos = [
+    { regex: /\bS\.?\s*A\.?\s*S\.?/gi, canonico: 'S.A.S.' },
+    { regex: /\bS\.?\s*A\.?\s*C\.?/gi, canonico: 'S.A.C.' },
+    { regex: /\bS\.?\s*A\.?(?!\s*S|\s*C)/gi, canonico: 'S.A.' },
+    { regex: /\bS\.?\s*de\s*R\.?\s*L\.?/gi, canonico: 'S. de R.L.' },
+    { regex: /\bLTDA\.?/gi, canonico: 'Ltda.' },
+  ];
+
+  let sufijoEncontrado = '';
+  for (const s of sufijos) {
+    if (s.regex.test(limpio)) {
+      sufijoEncontrado = s.canonico;
+      limpio = limpio.replace(s.regex, '').trim();
+      break;
+    }
+  }
+
+  const conectores = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'e', 'en']);
+  const palabras = limpio.split(/\s+/).map((p, idx) => {
+    const pLower = p.toLowerCase();
+    if (idx > 0 && conectores.has(pLower)) {
+      return pLower;
+    }
+    return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+  });
+
+  const base = palabras.join(' ').trim();
+  return sufijoEncontrado ? `${base} ${sufijoEncontrado}` : base;
+}
+
 // 2. cliente (NUNCA Periferia IT Group)
 export function extraerCliente(texto: string, reglas: ReglasNegocio): CampoExtraccion<string | null> {
   const regexPartes = /Entre(?:\s+los\s+suscritos,)?\s+([^,]+?),\s*(?:identificada\s+con\s+|NIT|RUC|RTN)/i;
@@ -247,7 +280,7 @@ export function extraerCliente(texto: string, reglas: ReglasNegocio): CampoExtra
     const candidato = match[1].trim();
     if (!/PERIFERIA\s+IT\s+GROUP/i.test(candidato)) {
       return {
-        valor: candidato,
+        valor: normalizarNombreCliente(candidato),
         confianza: reglas.niveles_confianza.etiquetado,
         evidencia: match[0].trim(),
       };
@@ -260,7 +293,7 @@ export function extraerCliente(texto: string, reglas: ReglasNegocio): CampoExtra
     const cand = mContratante[1].trim();
     if (!/PERIFERIA\s+IT\s+GROUP/i.test(cand)) {
       return {
-        valor: cand,
+        valor: normalizarNombreCliente(cand),
         confianza: reglas.niveles_confianza.etiquetado,
         evidencia: mContratante[0].trim(),
       };
@@ -925,8 +958,8 @@ export function procesarExtraccion(
     fecha_fin: fechaFinCampo.valor,
     requiere_poliza: garantiasResult.requiere_poliza.valor,
     tipo_poliza: garantiasResult.tipo_poliza.valor,
-    estado_poliza: garantiasResult.estado_poliza,
-    comercial: nombreComercial,
+    estado_poliza: null,
+    comercial: null,
     ruta_sharepoint: null,
     fecha_registro: fechaHoy,
     fuente: 'buzon',
