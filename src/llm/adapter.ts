@@ -17,6 +17,7 @@ export interface MensajeLLM {
   texto?: string;
   llamadas?: LlamadaHerramienta[];
   respuestaHerramienta?: RespuestaHerramienta;
+  crudoProveedor?: unknown;
 }
 
 export interface EsquemaHerramienta {
@@ -34,12 +35,14 @@ export interface RespuestaLLM {
   texto: string;
   llamadas: LlamadaHerramienta[];
   uso: UsoTokens;
+  crudoProveedor?: unknown;
 }
 
 export interface OpcionesEnvio {
   timeoutMs?: number;
   maxTokens?: number;
   systemInstruction?: string;
+  onNotificacion?: (detalle: string) => void;
 }
 
 export interface AdaptadorLLM {

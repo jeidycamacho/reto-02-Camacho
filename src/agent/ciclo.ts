@@ -30,6 +30,7 @@ export type ListenerEventoCiclo = (evento: {
   paso?: number;
   llamada?: LlamadaToolVisible;
   texto?: string;
+  detalle?: string;
   needsConfirmation?: boolean;
 }) => void;
 
@@ -48,7 +49,7 @@ export class CicloAgente {
   ) {
     this.maxIteraciones = opciones?.maxIteraciones ?? Number(process.env['MAX_ITERACIONES'] ?? 25);
     this.maxTokensSesion = opciones?.maxTokensSesion ?? Number(process.env['MAX_TOKENS_SESION'] ?? 400000);
-    this.timeoutMs = opciones?.timeoutMs ?? Number(process.env['LLM_TIMEOUT_MS'] ?? 60000);
+    this.timeoutMs = opciones?.timeoutMs ?? Number(process.env['LLM_TIMEOUT_MS'] ?? 120000);
   }
 
   public async ejecutarTurno(
@@ -122,6 +123,11 @@ export class CicloAgente {
           resLLM = await this.llm.enviar(sesion.mensajesLLM, esquemasHerramientas, {
             timeoutMs: this.timeoutMs,
             systemInstruction,
+            onNotificacion: (detalle) => {
+              if (onEvento) {
+                onEvento({ tipo: 'pensando', paso: iteracion, detalle });
+              }
+            },
           });
         } catch (error) {
           // El error del proveedor se muestra en el chat y la sesión sigue viva
@@ -139,6 +145,7 @@ export class CicloAgente {
           rol: 'model',
           texto: resLLM.texto,
           llamadas: resLLM.llamadas,
+          crudoProveedor: resLLM.crudoProveedor,
         });
 
         if (resLLM.texto) {

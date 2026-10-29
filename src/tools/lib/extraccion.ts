@@ -852,9 +852,9 @@ export function resolverComercial(emailRemitente: string, baseDir = process.cwd(
       if (encontrado) return encontrado.nombre;
     }
   } catch {
-    // Si no se encuentra o falla, devolver el correo
+    // Si no se encuentra o falla
   }
-  return emailRemitente;
+  return '';
 }
 
 export function procesarExtraccion(

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer } from 'vite';
-import { GeminiAdaptador } from './llm/gemini.ts';
+import { GeminiAdaptador, ejecutarDiagnostico } from './llm/gemini.ts';
 import { CicloAgente } from './agent/ciclo.ts';
 import {
   obtenerOCrearSesion,
@@ -25,9 +25,9 @@ app.use(express.json());
 const llmAdapter = new GeminiAdaptador();
 const cicloAgente = new CicloAgente(llmAdapter);
 
-// Middleware para ACCESS_KEY opcional en rutas /api/* (excepto /api/health)
+// Middleware para ACCESS_KEY opcional en rutas /api/* (excepto /api/health y /api/diagnostico)
 app.use((req: Request, res: Response, next: NextFunction): void => {
-  if (req.path.startsWith('/api') && req.path !== '/api/health') {
+  if (req.path.startsWith('/api') && req.path !== '/api/health' && req.path !== '/api/diagnostico') {
     const accessKey = process.env['ACCESS_KEY'];
     if (accessKey && accessKey.trim().length > 0) {
       const clientKey = req.headers['x-access-key'];
@@ -50,6 +50,22 @@ app.get('/api/health', (_req: Request, res: Response) => {
     provider: llmAdapter.proveedor,
     model: llmAdapter.modelo,
   });
+});
+
+// Endpoint de diagnóstico: llamada mínima al modelo ("responde OK", sin herramientas)
+app.get('/api/diagnostico', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const diag = await ejecutarDiagnostico(llmAdapter);
+    res.json(diag);
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    res.status(500).json({
+      ok: false,
+      modelo: llmAdapter.modelo,
+      ms: 0,
+      detalle_error: errMsg,
+    });
+  }
 });
 
 // Endpoint de chat con soporte JSON estándar y streaming NDJSON

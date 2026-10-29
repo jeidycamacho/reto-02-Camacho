@@ -115,7 +115,8 @@ export function SidePanel({ isOpen, onClose, refreshTrigger, accessKey }: SidePa
     }
   };
 
-  const buzonCount = maestroRows.filter((r) => r.fuente === 'buzon').length;
+  const nuevosCount = maestroRows.filter((r) => r.estado_registro === 'nuevo').length;
+  const actualizadosCount = maestroRows.filter((r) => r.estado_registro === 'actualizado').length;
 
   return (
     <aside
@@ -137,9 +138,14 @@ export function SidePanel({ isOpen, onClose, refreshTrigger, accessKey }: SidePa
           >
             <Database className="w-3.5 h-3.5" />
             <span>Maestro ({maestroRows.length})</span>
-            {buzonCount > 0 && (
-              <span className="ml-1 px-1 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] border border-emerald-500/40 font-semibold" title={`${buzonCount} registrados desde el buzón`}>
-                +{buzonCount}
+            {nuevosCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] border border-emerald-500/40 font-semibold" title={`${nuevosCount} contratos nuevos registrados`}>
+                +{nuevosCount} nuevos
+              </span>
+            )}
+            {actualizadosCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-sky-500/30 text-sky-300 text-[10px] border border-sky-500/40 font-semibold" title={`${actualizadosCount} contratos actualizados`}>
+                {actualizadosCount} actualizados
               </span>
             )}
           </button>
@@ -188,9 +194,9 @@ export function SidePanel({ isOpen, onClose, refreshTrigger, accessKey }: SidePa
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {activeTab === 'maestro' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+            <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 px-1 gap-2">
               <span className="text-[11px]">
-                Filas con fondo verde provienen de <strong className="text-emerald-400">buzón</strong>
+                Filas resaltadas: <strong className="text-emerald-400">Verde</strong> (Nuevo) • <strong className="text-sky-400">Azul</strong> (Actualizado)
               </span>
               <span className="text-[11px] font-mono text-slate-500">
                 Total: {maestroRows.length} contratos
@@ -209,25 +215,36 @@ export function SidePanel({ isOpen, onClose, refreshTrigger, accessKey }: SidePa
             ) : (
               <div className="space-y-2.5">
                 {maestroRows.map((row) => {
-                  const isBuzon = row.fuente === 'buzon';
+                  const esNuevo = row.estado_registro === 'nuevo';
+                  const esActualizado = row.estado_registro === 'actualizado';
+
+                  let cardClass = 'bg-slate-950/60 border-slate-800 hover:border-slate-700';
+                  if (esNuevo) {
+                    cardClass = 'bg-emerald-950/30 border-emerald-500/40 ring-1 ring-emerald-500/20';
+                  } else if (esActualizado) {
+                    cardClass = 'bg-sky-950/30 border-sky-500/40 ring-1 ring-sky-500/20';
+                  }
+
                   return (
                     <div
                       key={row.id_contrato}
-                      className={`p-3 rounded-lg border text-xs transition-colors ${
-                        isBuzon
-                          ? 'bg-emerald-950/30 border-emerald-500/40 ring-1 ring-emerald-500/20'
-                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
-                      }`}
+                      className={`p-3 rounded-lg border text-xs transition-colors ${cardClass}`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono font-bold text-sky-300 text-xs">
                             {row.id_contrato}
                           </span>
-                          {isBuzon && (
+                          {esNuevo && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                               <Sparkles className="w-2.5 h-2.5" />
-                              buzón
+                              Nuevo
+                            </span>
+                          )}
+                          {esActualizado && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                              <RefreshCw className="w-2.5 h-2.5" />
+                              Actualizado
                             </span>
                           )}
                         </div>
@@ -263,7 +280,7 @@ export function SidePanel({ isOpen, onClose, refreshTrigger, accessKey }: SidePa
                         </div>
                         <div>
                           <span className="text-slate-500">Comercial: </span>
-                          <span className="text-slate-200 truncate">{row.comercial}</span>
+                          <span className="text-slate-200 truncate">{row.comercial || 'N/A'}</span>
                         </div>
                       </div>
                     </div>

@@ -19,6 +19,7 @@ export interface FilaMaestro {
   ruta_sharepoint: string;
   fecha_registro: string;
   fuente: string;
+  estado_registro?: 'nuevo' | 'actualizado' | 'original';
 }
 
 export interface RegistroProcesado {
@@ -137,6 +138,40 @@ export function leerMaestro(baseDir = process.cwd()): FilaMaestro[] {
   const lineas = contenido.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lineas.length <= 1) return [];
 
+  let fechaCorteMaestro = '2026-05-30';
+  try {
+    const rutaReglas = path.join(baseDir, 'src', 'knowledge', 'reglas.json');
+    if (fs.existsSync(rutaReglas)) {
+      const rawReglas = JSON.parse(fs.readFileSync(rutaReglas, 'utf-8')) as { fecha_corte_maestro?: string };
+      if (rawReglas.fecha_corte_maestro) {
+        fechaCorteMaestro = rawReglas.fecha_corte_maestro;
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  const idsActualizados = new Set<string>();
+  try {
+    const rutaHistorial = path.join(baseDir, 'out', 'sharepoint', 'historial.jsonl');
+    if (fs.existsSync(rutaHistorial)) {
+      const lineasHistorial = fs.readFileSync(rutaHistorial, 'utf-8').split(/\r?\n/);
+      for (const line of lineasHistorial) {
+        if (!line.trim()) continue;
+        try {
+          const entry = JSON.parse(line) as { id_contrato?: string; accion?: string };
+          if (entry.id_contrato && (entry.accion === 'actualizacion' || entry.accion === 'actualizado')) {
+            idsActualizados.add(entry.id_contrato);
+          }
+        } catch {
+          // ignora errores de formato individual
+        }
+      }
+    }
+  } catch {
+    // ignora
+  }
+
   const filas: FilaMaestro[] = [];
 
   for (let i = 1; i < lineas.length; i++) {
@@ -144,8 +179,18 @@ export function leerMaestro(baseDir = process.cwd()): FilaMaestro[] {
     if (!linea) continue;
     const celdas = parsearLineaCSV(linea);
 
+    const idContrato = celdas[0] ?? '';
+    const fechaReg = celdas[14] ?? '';
+
+    let estadoRegistro: 'nuevo' | 'actualizado' | 'original' = 'original';
+    if (idsActualizados.has(idContrato)) {
+      estadoRegistro = 'actualizado';
+    } else if (fechaReg && fechaReg > fechaCorteMaestro) {
+      estadoRegistro = 'nuevo';
+    }
+
     filas.push({
-      id_contrato: celdas[0] ?? '',
+      id_contrato: idContrato,
       cliente: celdas[1] ?? '',
       nit_cliente: celdas[2] ?? '',
       pais: celdas[3] ?? '',
@@ -159,8 +204,9 @@ export function leerMaestro(baseDir = process.cwd()): FilaMaestro[] {
       estado_poliza: celdas[11] ?? 'no_aplica',
       comercial: celdas[12] ?? '',
       ruta_sharepoint: celdas[13] ?? '',
-      fecha_registro: celdas[14] ?? '',
+      fecha_registro: fechaReg,
       fuente: celdas[15] ?? 'buzon',
+      estado_registro: estadoRegistro,
     });
   }
 

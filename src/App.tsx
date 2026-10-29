@@ -70,6 +70,7 @@ export default function App() {
   const [inputValue, setInputValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [thinkingStep, setThinkingStep] = useState<number | null>(null);
+  const [thinkingDetail, setThinkingDetail] = useState<string | null>(null);
   const [currentToolCalls, setCurrentToolCalls] = useState<ToolCallData[]>([]);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
@@ -310,6 +311,7 @@ export default function App() {
             paso?: number;
             llamada?: ToolCallData;
             texto?: string;
+            detalle?: string;
             needsConfirmation?: boolean;
             error?: string;
           } | null = null;
@@ -324,6 +326,11 @@ export default function App() {
           if (ev) {
             if (ev.tipo === 'pensando') {
               setThinkingStep(ev.paso ?? ((prev) => (prev ? prev + 1 : 1)));
+              if (ev.detalle) {
+                setThinkingDetail(ev.detalle);
+              } else {
+                setThinkingDetail(null);
+              }
             } else if (ev.tipo === 'herramienta' && ev.llamada) {
               accumulatedTools.push(ev.llamada);
               setCurrentToolCalls([...accumulatedTools]);
@@ -634,7 +641,8 @@ export default function App() {
                   <div className="flex items-center space-x-2.5 text-sky-400">
                     <div className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping" />
                     <span className="font-medium text-xs">
-                      Pensando… {thinkingStep ? `paso ${thinkingStep}` : ''}
+                      Pensando… {thinkingStep ? `paso ${thinkingStep}` : ''}{' '}
+                      {thinkingDetail ? `(${thinkingDetail})` : ''}
                     </span>
                   </div>
 

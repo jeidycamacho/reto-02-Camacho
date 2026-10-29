@@ -73,7 +73,7 @@ export function resolverComercial(emailRemitente: string, baseDir = process.cwd(
   } catch {
     // Si falla o no existe
   }
-  return { nombre: emailRemitente, registrado: false };
+  return { nombre: '', registrado: false };
 }
 
 export function validarContrato(
@@ -99,7 +99,7 @@ export function validarContrato(
 
   const { nombre: comercialResuelto, registrado: comercialRegistrado } = resolverComercial(emailRemitente, baseDir);
   if (!comercialRegistrado && emailRemitente) {
-    advertencias.push(`Remitente ${emailRemitente} no registrado en comerciales.json`);
+    advertencias.push(`remitente no registrado: ${emailRemitente}`);
   }
 
   // 1. Buscar en el maestro
